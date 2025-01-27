@@ -38,11 +38,28 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import java.util.Locale
+import kotlin.properties.Delegates
+
+const val CMD_PWR_ON = "开灯"
+const val CMD_PWR_OFF = "关灯"
+const val CMD_BRIGHTER = "亮一点"
+const val CMD_DARKER = "暗一点"
+const val CMD_CHANGE_COLOR = "换颜色"
 
 class MainActivity : ComponentActivity() {
+
+    private var volume by Delegates.notNull<Int>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent { MainLayout() }
+        volume = getVolume()
+        println("volume = $volume")
+    }
+
+    override fun onPause() {
+        super.onPause()
+        setVolume(volume)
     }
 }
 
@@ -50,11 +67,11 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainLayout() {
     val labelAndIconMap = mapOf(
-        "开灯" to Icons.Default.Home,
-        "关灯" to Icons.Default.Close,
-        "亮一点" to Icons.Default.KeyboardArrowUp,
-        "暗一点" to Icons.Default.KeyboardArrowDown,
-        "换颜色" to Icons.Default.Edit,
+        CMD_PWR_ON to Icons.Default.Home,
+        CMD_PWR_OFF to Icons.Default.Close,
+        CMD_BRIGHTER to Icons.Default.KeyboardArrowUp,
+        CMD_DARKER to Icons.Default.KeyboardArrowDown,
+        CMD_CHANGE_COLOR to Icons.Default.Edit,
         "关于..." to Icons.Default.Info
     )
     val xCellCount = 2
@@ -87,6 +104,13 @@ fun OpButton(text: String, icon: ImageVector, modifier: Modifier = Modifier) {
         val speakCallback = Runnable {
             tts?.run {
                 if (isSpeaking) stop()
+
+                // 为了提高辨识灵敏度
+                ctx.setMaxVolume()
+                // 根据 Google语音识别和语音合成 和 小米手机系统自带“系统语音引擎” 进行调整
+                if (text == CMD_PWR_ON || text == CMD_PWR_OFF) setSpeechRate(0.8f)
+                else if (text == CMD_BRIGHTER || text == CMD_DARKER) setPitch(0.9f)
+
                 language = Locale.PRC
                 setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(utteranceId: String?) {}
